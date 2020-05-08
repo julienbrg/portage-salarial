@@ -10,7 +10,7 @@ contract PortageSalarial {
 
     bool public active;
 
-    ERC20 public DAI;
+    ERC20 public EUR;
 
     uint256 public value;
     uint256 public amount;
@@ -24,17 +24,17 @@ contract PortageSalarial {
 
     constructor (
         address payable _worker, address _customer, uint256 _value, uint256 _duration, uint256 _maxDelay) public payable {
+        EUR = ERC20(0xA3133F602FF612054025000eAA6E665cF1f78A60);
         funder = msg.sender;
         worker = _worker;
         customer = _customer;
         duration = _duration;
-        active = true;
-        start = now;
+        maxDelay = _maxDelay;
         value = _value * 10 ** 18 ;
         amount = value / duration;
+        active = true;
+        start = now;
         lastPaid = now;
-        maxDelay = _maxDelay;
-        DAI = ERC20(0x7cc7E7D8547a813077CD97DC00848C81F4d8bD0e);
     }
 
     function hold() public {
@@ -42,7 +42,7 @@ contract PortageSalarial {
         require (msg.sender == customer);
         require (now >= holdUntil);
         require (maxDelay > delay);
-        holdUntil = now + 24 hours;
+        holdUntil = now + 24 seconds;
         delay += 1;
         if (paid + delay >= duration) {
             active = false;
@@ -52,8 +52,8 @@ contract PortageSalarial {
     function pay() public {
         require (active == true);
         require (now >= holdUntil);
-        require (now >= lastPaid + 24 hours);
-        DAI.transfer(worker, amount);
+        require (now >= lastPaid + 24 seconds);
+        EUR.transfer(worker, amount);
         lastPaid = now;
         paid += 1;
         if (paid + delay >= duration) {
@@ -64,18 +64,18 @@ contract PortageSalarial {
     function sweep() public {
         require (active == false);
         require (msg.sender == funder);
-        DAI.transfer(funder, address(this).balance);
+        EUR.transfer(funder, EUR.balanceOf(address(this)));
     }
 
     function timeLeft() public view returns(uint256) {
-        return lastPaid + 24 hours - now;
+        return lastPaid + 24 seconds - now;
     }
 
     function checkHold() public view returns(uint256) {
         return holdUntil - now;
     }
 
-    function daiBalance() public view returns (uint256) {
-        return DAI.balanceOf(address(this));
+    function EURbalance() public view returns (uint256) {
+        return EUR.balanceOf(address(this));
     }
 }
